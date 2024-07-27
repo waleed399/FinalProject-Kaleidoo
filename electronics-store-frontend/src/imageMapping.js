@@ -53,8 +53,10 @@ const images = [
   'SanDisk  Extreme Pro 32 GB SDHC.jpg',
   'NS-6490 Bookshelf Speaker (Pair).jpg',
   'Zoom - H1 Handy Recorder - Black.jpg',
+  '17.3 WE72 7RJ Mobile Workstation.jpg',
   'JBL Cinema SB350 Soundbar System.jpg',
-  'Samsung J1 (Verizon LTE Prepaid).jpg'
+  'Samsung J1 (Verizon LTE Prepaid).jpg',
+  'Polk Audio - 50 W Woofer - Black.jpg'
 ];
 
 // Create a mapping of product names to image filenames
