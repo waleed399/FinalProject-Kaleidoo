@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../components/Header';
-import SearchBar from '../components/SearchBar';
+import MenuBar from '../components/MenuBar'; // Use MenuBar for search functionality
 import Pagination from '../components/Pagination';
 import ProductList from '../components/ProductList';
 import imageMapping from '../imageMapping'; // Import the image mapping
@@ -53,7 +53,7 @@ function HomePage() {
   return (
     <div>
       <Header />
-      <SearchBar onSearch={setSearchTerm} />
+      <MenuBar onSearch={setSearchTerm}/>
       <ProductList products={filteredProducts} />
       <Pagination 
         currentPage={currentPage} 
