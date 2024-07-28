@@ -1,41 +1,82 @@
-/* ProductDetail.css */
-
 .product-detail {
-  background-color: #fff;
+  background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
   max-width: 800px;
   margin: 20px auto;
+  transition: transform 0.3s ease;
+  color: #333;
+}
+
+.product-detail:hover {
+  transform: translateY(-5px);
 }
 
 .product-detail h1 {
   font-size: 2rem;
-  color: #333;
+  color: #007bff; /* Primary color for the title */
+  text-align: center;
 }
 
 .product-detail p {
   font-size: 1rem;
   color: #666;
+  margin-top: 10px;
+  line-height: 1.5;
 }
 
 .product-detail img {
-  width: 100%;
-  height: auto;
+  width: 300px; /* Smaller width */
+  height: 200px; /* Smaller height */
+  object-fit: cover;
   border-radius: 10px;
+  transition: transform 0.3s ease;
+  display: block;
+  margin: 20px auto;
+}
+
+.product-detail img:hover {
+  transform: scale(1.05);
 }
 
 .product-detail button {
-  background-color: #003366; /* Dark blue background for buttons */
+  background-color: #28a745; /* Green background for buttons */
   color: #fff;
   border: none;
   padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
+  transition: background-color 0.3s ease;
+  display: block;
+  margin: 20px auto;
 }
 
 .product-detail button:hover {
-  background-color: #002244;
+  background-color: #218838;
+}
+
+
+/* Adding hover effect to the card */
+.product-detail {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-detail:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.product-detail:hover:before {
+  opacity: 1;
 }

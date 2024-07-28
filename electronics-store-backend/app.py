@@ -3,15 +3,21 @@ from pymongo import MongoClient
 import certifi
 import os
 from flask_cors import CORS
+from dotenv import load_dotenv
+import bcrypt
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 # Load environment variables from .env file
-from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all origins
 
 app.config["MONGO_URI"] = os.getenv('MONGO_URI')
+app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY')  # Add a secret key for JWT
+
+# Initialize JWT Manager
+jwt = JWTManager(app)
 
 # Connect to MongoDB
 client = MongoClient(
@@ -21,15 +27,27 @@ client = MongoClient(
 )
 db = client.electronics_store
 electronics_data_collection = db.electronics_data
+users_collection = db.users
+counters_collection = db.counters  # Collection to keep track of counters
+
+# Helper function to get the next sequence value for user_id
+def get_next_sequence_value(sequence_name):
+    counter = counters_collection.find_one_and_update(
+        {'_id': sequence_name},
+        {'$inc': {'sequence_value': 1}},
+        return_document=True,
+        upsert=True
+    )
+    return counter['sequence_value']
 
 @app.route('/api/products', methods=['GET'])
 def get_products():
     try:
         page = int(request.args.get('page', 1))
-        limit = int(request.args.get('limit', 10))  # Default to 10 products per page
+        limit = 12  # Set limit to 12 products per page
         skip = (page - 1) * limit
 
-        # Get distinct products with shortest names, limited to 50 products
+        # Get distinct products with shortest names, limit to 50 products
         pipeline = [
             {"$group": {
                 "_id": "$id",
@@ -42,12 +60,12 @@ def get_products():
                 "nameLength": {"$strLenCP": "$name"}  # Calculate length of the name
             }},
             {"$sort": {"nameLength": 1}},  # Sort by name length (ascending)
-            {"$limit": 50}  # Limit to 50 products with shortest names
+            {"$limit": 50}  # Limit to 50 distinct products
         ]
 
         products = list(electronics_data_collection.aggregate(pipeline))
 
-        # Apply pagination on the 50 products
+        # Apply pagination
         paginated_products = products[skip: skip + limit]
 
         total_pages = (len(products) // limit) + (1 if len(products) % limit > 0 else 0)
@@ -68,6 +86,7 @@ def get_products():
         print(f"Error: {e}")  # Log error message
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/products/<id>', methods=['GET'])
 def get_product(id):
     try:
@@ -87,8 +106,60 @@ def get_product(id):
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/register', methods=['POST'])
+def register_user():
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email')
+
+        if not username or not password or not email:
+            return jsonify({'error': 'Username, password, and email are required'}), 400
+
+        existing_user = users_collection.find_one({'username': username})
+        if existing_user:
+            return jsonify({'error': 'Username already exists'}), 400
+
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        user_id = get_next_sequence_value('user_id')
+
+        users_collection.insert_one({
+            'user_id': user_id,
+            'username': username,
+            'password': hashed_password,
+            'email': email
+        })
+
+        return jsonify({'message': 'User registered successfully', 'user_id': user_id}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/login', methods=['POST'])
+def login_user():
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required'}), 400
+
+        user = users_collection.find_one({'username': username})
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
+            access_token = create_access_token(identity={'username': username})
+            return jsonify({'message': 'Login successful', 'access_token': access_token}), 200
+        else:
+            return jsonify({'error': 'Invalid username or password'}), 401
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5555)
+
 
 
 # # Initialize SparkSession

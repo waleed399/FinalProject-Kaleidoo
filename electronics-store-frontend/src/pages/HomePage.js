@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../components/Header';
-import MenuBar from '../components/MenuBar'; // Use MenuBar for search functionality
+import MenuBar from '../components/MenuBar';
 import Pagination from '../components/Pagination';
 import ProductList from '../components/ProductList';
-import imageMapping from '../imageMapping'; // Import the image mapping
+import AuthPopup from '../components/AuthPopup';
+import imageMapping from '../imageMapping';
 import '../styling/HomePage.css';
 
 function HomePage() {
@@ -12,7 +13,10 @@ function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 10;  // Set to 10 products per page
+  const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(localStorage.getItem('loggedInUser'));
+
+  const productsPerPage = 12;
 
   useEffect(() => {
     async function fetchProducts() {
@@ -20,12 +24,10 @@ function HomePage() {
         const response = await axios.get('http://127.0.0.1:5555/api/products', {
           params: { page: currentPage, limit: productsPerPage }
         });
-        console.log("Fetched products:", response.data); // Log the response data
 
         if (response.data.products.length > 0) {
-          // Map products to include image filename
           const updatedProducts = response.data.products.map(product => {
-            const imageFilename = imageMapping[product.name.toLowerCase()] || 'placeholder.jpg'; // Fallback to placeholder
+            const imageFilename = imageMapping[product.name.toLowerCase()] || 'placeholder.jpg';
             return {
               ...product,
               image: imageFilename
@@ -44,22 +46,43 @@ function HomePage() {
     fetchProducts();
   }, [currentPage]);
 
+  const handleReset = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  console.log("Filtered products:", filteredProducts);
+  const handleLoginSuccess = (username) => {
+    setLoggedInUser(username);
+    localStorage.setItem('loggedInUser', username);
+    setIsAuthPopupOpen(false);
+  };
+
+  const handleLogout = () => {
+    setLoggedInUser(null);
+    localStorage.removeItem('loggedInUser');
+  };
 
   return (
     <div>
       <Header />
-      <MenuBar onSearch={setSearchTerm}/>
+      <MenuBar 
+        onSearch={setSearchTerm} 
+        onReset={handleReset} 
+        loggedInUser={loggedInUser} 
+        onAuthClick={() => setIsAuthPopupOpen(true)} 
+        onLogout={handleLogout} 
+      />
       <ProductList products={filteredProducts} />
       <Pagination 
         currentPage={currentPage} 
         totalPages={totalPages} 
         onPageChange={setCurrentPage} 
       />
+      {isAuthPopupOpen && <AuthPopup onClose={() => setIsAuthPopupOpen(false)} onLoginSuccess={handleLoginSuccess} />}
     </div>
   );
 }

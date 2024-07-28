@@ -1,50 +1,56 @@
-/* MenuBar.css */
-
-/* Menu Bar */
 .menu-bar {
-    display: flex;
-    justify-content: center;
-    background-color: #002244; /* Darker blue for menu bar */
-    padding: 10px;
-  }
-  
-  .menu-bar a {
-    color: #fff;
-    padding: 14px 20px;
-    text-decoration: none;
-    font-size: 1.2rem;
-  }
-  
-  .menu-bar a:hover {
-    background-color: #003366;
-  }
-  
-  /* Search Bar */
-  .search-bar {
-    display: flex;
-    align-items: center;
-    margin-left: auto; /* Align to the right */
-  }
-  
-  .search-bar input {
-    width: 250px; /* Adjust width as needed */
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
-  
-  .search-bar button {
-    padding: 10px 20px;
-    margin-left: 10px;
-    border: none;
-    background-color: #003366; /* Dark blue background for button */
-    color: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .search-bar button:hover {
-    background-color: #002244;
-  }
-  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #343a40; /* Dark grey background */
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.menu-bar a {
+  margin-right: 20px;
+  text-decoration: none;
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.menu-bar a:hover {
+  color: #007bff; /* Primary color on hover */
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+}
+
+.search-bar input {
+  padding: 5px;
+  margin-right: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.auth-section {
+  display: flex;
+  align-items: center;
+}
+
+.auth-button, .logout-button {
+  background-color: #007bff; /* Primary color background */
+  color: white;
+  border: none;
+  padding: 10px;
+  margin-left: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.auth-button:hover, .logout-button:hover {
+  background-color: #0056b3; /* Darker shade on hover */
+}
+
+.welcome-message {
+  margin-right: 10px;
+}

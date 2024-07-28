@@ -1,5 +1,4 @@
 /* ProductCard.css */
-
 .product-card {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -10,6 +9,12 @@
   text-align: center;
   display: flex;
   flex-direction: column;
+  margin: 10px; /* Add margin for spacing between cards */
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px); /* Slightly lift the card on hover */
 }
 
 .product-card img {
@@ -31,15 +36,16 @@
 }
 
 .product-card button {
-  background-color: #003366; /* Dark blue background for buttons */
+  background-color: #007bff;
   color: #fff;
   border: none;
   padding: 10px;
   margin: 10px;
   border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .product-card button:hover {
-  background-color: #002244;
+  background-color: #0056b3;
 }

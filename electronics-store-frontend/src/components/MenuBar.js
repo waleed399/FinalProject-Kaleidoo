@@ -1,19 +1,46 @@
 // src/components/MenuBar.js
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import '../styling/MenuBar.css';
 
-import React from 'react';
-import { Link } from 'react-router-dom'; // If using react-router for navigation
-import '../styling/MenuBar.css'; // Ensure you create this CSS file
+const MenuBar = ({ onSearch, onReset, loggedInUser, onAuthClick, onLogout }) => {
+  const [searchInput, setSearchInput] = useState('');
 
-const MenuBar = () => {
+  const handleSearchChange = (event) => {
+    setSearchInput(event.target.value);
+  };
+
+  const handleSearchClick = () => {
+    onSearch(searchInput);
+  };
+
+  const handleHomeClick = () => {
+    setSearchInput('');
+    onSearch('');
+    onReset();
+  };
+
   return (
     <div className="menu-bar">
-      <Link to="/">Home</Link>
+      <Link to="/" onClick={handleHomeClick}>Home</Link>
       <Link to="/contact">Contact Us</Link>
-      {/* Add more links as needed */}
       <div className="search-bar">
-        <input type="text" placeholder="Search products..." />
-        <button>Search</button>
+        <input 
+          type="text" 
+          value={searchInput} 
+          onChange={handleSearchChange} 
+          placeholder="Search products..."
+        />
+        <button onClick={handleSearchClick}>Search</button>
       </div>
+      {loggedInUser ? (
+        <div className="auth-section">
+          <span className="welcome-message">Welcome, {loggedInUser}</span>
+          <button onClick={onLogout} className="logout-button">Logout</button>
+        </div>
+      ) : (
+        <button onClick={onAuthClick} className="auth-button">Login/Register</button>
+      )}
     </div>
   );
 };
