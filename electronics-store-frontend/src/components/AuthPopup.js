@@ -1,38 +1,58 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import '../styling/AuthPopup.css';
+import NotificationPopup from './NotificationPopup';
 
 const AuthPopup = ({ onClose, onLoginSuccess }) => {
   const [isRegister, setIsRegister] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Manage loading state
 
   const handleRegister = async () => {
+    setIsLoading(true);
     try {
       const response = await axios.post('http://127.0.0.1:5555/api/register', {
         username,
         password,
         email
       });
-      alert(response.data.message);
-      onClose();
+      setPopupMessage(response.data.message);
+      setShowPopup(true);
+      setIsLoading(false);
+      setTimeout(() => {
+        setShowPopup(false);
+        onClose(); // Close the popup and then call onClose to handle any additional logic
+      }, 2000);
     } catch (error) {
-      alert(error.response.data.error);
+      setPopupMessage(error.response ? error.response.data.error : 'An error occurred');
+      setShowPopup(true);
+      setIsLoading(false);
     }
   };
 
   const handleLogin = async () => {
+    setIsLoading(true);
     try {
       const response = await axios.post('http://127.0.0.1:5555/api/login', {
         username,
         password
       });
-      alert(response.data.message);
-      onLoginSuccess(username);  // Call the onLoginSuccess prop with the username
-      onClose();
+      setPopupMessage(response.data.message);
+      setShowPopup(true);
+      setIsLoading(false);
+      setTimeout(() => {
+        setShowPopup(false);
+        onLoginSuccess(username); // Call onLoginSuccess after popup is closed
+        onClose(); // Close the popup and then navigate
+      }, 2000);
     } catch (error) {
-      alert(error.response.data.error);
+      setPopupMessage(error.response ? error.response.data.error : 'An error occurred');
+      setShowPopup(true);
+      setIsLoading(false);
     }
   };
 
@@ -61,13 +81,21 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
             onChange={(e) => setEmail(e.target.value)} 
           />
         )}
-        <button onClick={isRegister ? handleRegister : handleLogin}>
+        <button onClick={isRegister ? handleRegister : handleLogin} disabled={isLoading}>
           {isRegister ? 'Register' : 'Login'}
         </button>
         <p onClick={() => setIsRegister(!isRegister)}>
           {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
         </p>
       </div>
+
+      {/* Conditionally render the NotificationPopup */}
+      {showPopup && (
+        <NotificationPopup
+          message={popupMessage}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
     </div>
   );
 };

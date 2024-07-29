@@ -1,9 +1,10 @@
 import React from 'react';
+import '../styling/Header.css'; // Import the CSS file with your styles
 
 function Header() {
   return (
     <header>
-      <h1>Electronics Store</h1>
+      <div className="store-name">Electronics Store</div>
     </header>
   );
 }

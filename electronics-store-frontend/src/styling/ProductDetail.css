@@ -8,6 +8,8 @@
   margin: 20px auto;
   transition: transform 0.3s ease;
   color: #333;
+  position: relative; /* Ensure the container's position is relative */
+  overflow: hidden; /* Ensure no content overflows */
 }
 
 .product-detail:hover {
@@ -41,42 +43,21 @@
   transform: scale(1.05);
 }
 
+/* Ensure the button has the correct styling and is clickable */
 .product-detail button {
-  background-color: #28a745; /* Green background for buttons */
-  color: #fff;
-  border: none;
   padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1rem;
   transition: background-color 0.3s ease;
-  display: block;
-  margin: 20px auto;
+  z-index: 1; /* Ensure the button is above other elements */
+  position: relative; /* Ensure the button is positioned correctly */
 }
 
 .product-detail button:hover {
-  background-color: #218838;
+  background-color: #0056b3;
 }
 
-
-/* Adding hover effect to the card */
-.product-detail {
-  position: relative;
-  overflow: hidden;
-}
-
-.product-detail:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.product-detail:hover:before {
-  opacity: 1;
-}
+/* Remove any duplicated or conflicting styles */

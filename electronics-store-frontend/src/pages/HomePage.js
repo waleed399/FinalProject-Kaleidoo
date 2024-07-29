@@ -76,7 +76,7 @@ function HomePage() {
         onAuthClick={() => setIsAuthPopupOpen(true)} 
         onLogout={handleLogout} 
       />
-      <ProductList products={filteredProducts} />
+      <ProductList products={filteredProducts} loggedInUser={loggedInUser}/>
       <Pagination 
         currentPage={currentPage} 
         totalPages={totalPages} 

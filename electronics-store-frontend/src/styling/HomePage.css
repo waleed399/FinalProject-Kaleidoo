@@ -21,31 +21,6 @@ header {
   align-items: center;
 }
 
-header .logo {
-  display: flex;
-  align-items: center;
-}
-
-header .logo i {
-  font-size: 2rem;
-  margin-right: 10px;
-}
-
-header .title {
-  flex-grow: 1;
-  text-align: center;
-}
-
-header .title span {
-  display: inline-block;
-  padding: 0 10px;
-}
-
-header .auth-section {
-  display: flex;
-  align-items: center;
-}
-
 /* Container Styles */
 .container {
   max-width: 1200px;
