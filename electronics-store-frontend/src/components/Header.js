@@ -4,7 +4,7 @@ import '../styling/Header.css'; // Import the CSS file with your styles
 function Header() {
   return (
     <header>
-      <div className="store-name">Electronics Store</div>
+      <div className="store-name">TechTronix</div>
     </header>
   );
 }

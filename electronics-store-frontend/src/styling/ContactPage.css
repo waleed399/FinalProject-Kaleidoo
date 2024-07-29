@@ -1,0 +1,44 @@
+/* src/styling/ContactPage.css */
+
+.contact-page {
+    padding: 20px;
+    text-align: center;
+}
+
+.contact-page h1 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.contact-page p {
+    font-size: 1rem;
+    margin: 10px 0;
+}
+
+.contact-page a {
+    color: #2287eb; /* Set email color to match button background */
+    text-decoration: none;
+}
+
+.contact-page a:hover {
+    text-decoration: underline;
+}
+
+.return-home-button {
+    display: inline-block;
+    margin-top: 20px; /* Adjusted for better placement */
+    padding: 10px 20px;
+    font-size: 1rem;
+    color: #fff; /* Ensure button text color is white */
+    background-color: #e4e8ed; /* Button background color */
+    border-radius: 5px;
+    border: none; /* Remove default border */
+    text-align: center; /* Center text in the button */
+    text-decoration: none; /* Ensure no underline */
+    transition: background-color 0.3s ease;
+    cursor: pointer; /* Show pointer cursor */
+}
+
+.return-home-button:hover {
+    background-color: #0056b3; /* Darker background on hover */
+}

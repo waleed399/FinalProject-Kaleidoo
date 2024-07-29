@@ -260,3 +260,29 @@ footer {
   bottom: 0;
   width: 100%;
 }
+.footer {
+  text-align: center;
+  padding: 20px;
+  background-color: #343a40;
+  color: white;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.footer-logo {
+  width: 50px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.contact-button {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.contact-button:hover {
+  color: #0056b3;
+}
