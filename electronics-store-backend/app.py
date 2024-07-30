@@ -1,7 +1,12 @@
-from flask import Flask, jsonify, request
+from datetime import datetime 
+import threading
+from flask import Flask, json, jsonify, request
 from pymongo import MongoClient
 import certifi
 import os
+from kafka import KafkaProducer, KafkaConsumer
+from pyspark.sql import SparkSession
+from model import RecommendationEngine
 from flask_cors import CORS
 from dotenv import load_dotenv
 import bcrypt
@@ -29,6 +34,58 @@ db = client.electronics_store
 electronics_data_collection = db.electronics_data
 users_collection = db.users
 counters_collection = db.counters  # Collection to keep track of counters
+interactions_collection = db.interactions
+products_names_collection = db.products_names
+# Kafka producer configuration
+producer = KafkaProducer(
+    bootstrap_servers='localhost:9092',
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
+
+# Initialize SparkSession
+spark = SparkSession.builder.appName("RecommendationEngine").getOrCreate()
+
+# Load product DataFrame
+product_data = list(products_names_collection.find({}, {'_id': 0}))
+product_df = spark.createDataFrame(product_data)
+
+# Initialize the recommendation engine
+model_path = "./recommendation_model"
+print(f"Model path: {model_path}")
+recommendation_engine = RecommendationEngine(model_path, product_df)
+
+# Kafka consumer configuration
+consumer = KafkaConsumer(
+    'user-interactions',
+    bootstrap_servers='localhost:9092',
+    value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+)
+
+# Kafka consumer configuration
+def kafka_consumer():
+    consumer = KafkaConsumer(
+        'user-interactions',
+        bootstrap_servers='localhost:9092',
+        value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+    )
+
+    for message in consumer:
+        interaction_data = message.value
+        user_id = interaction_data['user_id']
+        product_scores = interaction_data['product_scores']
+
+        # Fetch the user from MongoDB
+        user = users_collection.find_one({'user_id': user_id})
+
+        if user:
+            # Generate recommendations for an existing user
+            recommendations_df = recommendation_engine.recommend_items(user_id, product_scores)
+        else:
+            # Handle new users
+            recommendations_df = recommendation_engine.recommend_for_new_user()
+
+        recommendations_list = recommendations_df.collect() if recommendations_df else []
+        print(f"Recommendations for user {user_id}: {recommendations_list}")
 
 # Helper function to get the next sequence value for user_id
 def get_next_sequence_value(sequence_name):
@@ -150,12 +207,102 @@ def login_user():
         user = users_collection.find_one({'username': username})
         if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
             access_token = create_access_token(identity={'username': username})
-            return jsonify({'message': 'Login successful', 'access_token': access_token}), 200
+            return jsonify({
+                'message': 'Login successful',
+                'access_token': access_token,
+                'user_id': str(user['user_id'])  # Return the user ID
+            }), 200
         else:
             return jsonify({'error': 'Invalid username or password'}), 401
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/update-interactions', methods=['POST'])
+def update_interactions():
+    print("Received request")
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        product_id = data.get('product_id')
+        interaction_type = data.get('interaction_type')
+        score = data.get('score')
+
+        if not user_id or not product_id or not interaction_type or not score:
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        # Determine interaction score
+        interaction_score = 0
+        if interaction_type == "click":
+            interaction_score = 1
+        elif interaction_type == "search":
+            interaction_score = 3
+        elif interaction_type == "purchase":
+            interaction_score = 5
+        else:
+            return jsonify({'error': 'Invalid interaction type'}), 400
+
+        # Update or insert the interaction record
+        interaction = interactions_collection.find_one({
+            'user_id': user_id,
+            'interactions.product_id': product_id
+        })
+
+        if interaction:
+            # Update the existing interaction score
+            result = interactions_collection.update_one(
+                {
+                    'user_id': user_id,
+                    'interactions.product_id': product_id
+                },
+                {
+                    '$inc': {
+                        'interactions.$.score': interaction_score
+                    },
+                    '$set': {'interactions.$.timestamp': datetime.utcnow()}
+                }
+            )
+        else:
+            # Insert new interaction
+            result = interactions_collection.update_one(
+                {'user_id': user_id},
+                {
+                    '$push': {
+                        'interactions': {
+                            'product_id': product_id,
+                            'interaction_type': interaction_type,
+                            'score': interaction_score,
+                            'timestamp': datetime.utcnow()
+                        }
+                    },
+                    '$inc': {'action_count': 1}
+                },
+                upsert=True
+            )
+
+        # Check if the user has reached the action threshold
+        user = interactions_collection.find_one({'user_id': user_id})
+        if user and user.get('action_count', 0) >= 5:
+            product_scores = {interaction['product_id']: interaction['score'] for interaction in user.get('interactions', [])}
+            # Send to Kafka
+            interaction_data = {
+                'user_id': user_id,
+                'product_scores': product_scores
+            }
+            print(product_scores)
+            producer.send('user-interactions', value=interaction_data)
+            
+            # Reset user action count
+            interactions_collection.update_one({'user_id': user_id}, {'$set': {'action_count': 0}})
+
+        return jsonify({'message': 'Interactions updated successfully'}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Run Kafka consumer in a background thread
+consumer_thread = threading.Thread(target=kafka_consumer)
+consumer_thread.start()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5555)
@@ -199,7 +346,7 @@ if __name__ == "__main__":
 #     doc_copy.pop("_id", None)
 #     return doc_copy
 
-##########################################
+# #########################################
 # @app.route("/", methods=["GET"])
 # def index():
 #     try:

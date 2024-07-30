@@ -10,7 +10,7 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Manage loading state
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
     setIsLoading(true);
@@ -25,7 +25,7 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
       setIsLoading(false);
       setTimeout(() => {
         setShowPopup(false);
-        onClose(); // Close the popup and then call onClose to handle any additional logic
+        onClose();
       }, 2000);
     } catch (error) {
       setPopupMessage(error.response ? error.response.data.error : 'An error occurred');
@@ -46,8 +46,9 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
       setIsLoading(false);
       setTimeout(() => {
         setShowPopup(false);
-        onLoginSuccess(username); // Call onLoginSuccess after popup is closed
-        onClose(); // Close the popup and then navigate
+        // Pass user_id and access_token to onLoginSuccess
+        onLoginSuccess(username, response.data.user_id, response.data.access_token);
+        onClose();
       }, 2000);
     } catch (error) {
       setPopupMessage(error.response ? error.response.data.error : 'An error occurred');
@@ -89,7 +90,6 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
         </p>
       </div>
 
-      {/* Conditionally render the NotificationPopup */}
       {showPopup && (
         <NotificationPopup
           message={popupMessage}

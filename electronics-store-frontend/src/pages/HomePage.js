@@ -5,7 +5,6 @@ import MenuBar from '../components/MenuBar';
 import Pagination from '../components/Pagination';
 import ProductList from '../components/ProductList';
 import AuthPopup from '../components/AuthPopup';
-import imageMapping from '../imageMapping';
 import '../styling/HomePage.css';
 
 function HomePage() {
@@ -15,6 +14,8 @@ function HomePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(localStorage.getItem('loggedInUser'));
+  const [userId, setUserId] = useState(localStorage.getItem('userId'));
+  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
 
   const productsPerPage = 12;
 
@@ -26,15 +27,7 @@ function HomePage() {
         });
 
         if (response.data.products.length > 0) {
-          const updatedProducts = response.data.products.map(product => {
-            const imageFilename = imageMapping[product.name.toLowerCase()] || 'placeholder.jpg';
-            return {
-              ...product,
-              image: imageFilename
-            };
-          });
-
-          setProducts(updatedProducts);
+          setProducts(response.data.products);
           setTotalPages(response.data.totalPages);
         } else {
           setProducts([]);
@@ -55,15 +48,49 @@ function HomePage() {
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleLoginSuccess = (username) => {
+  const handleLoginSuccess = (username, userId, accessToken) => {
     setLoggedInUser(username);
+    setUserId(userId); // Store the user ID
+    setAccessToken(accessToken); // Store the access token
     localStorage.setItem('loggedInUser', username);
+    localStorage.setItem('userId', userId); // Store user ID in localStorage
+    localStorage.setItem('accessToken', accessToken); // Store access token in localStorage
     setIsAuthPopupOpen(false);
   };
 
   const handleLogout = () => {
     setLoggedInUser(null);
+    setUserId(null);
+    setAccessToken(null);
     localStorage.removeItem('loggedInUser');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('accessToken');
+  };
+
+  const handleProductClick = (productId) => {
+    console.log(`Product clicked: ${productId}`);
+    console.log(`user_id : ${userId}`)
+    if (userId) {
+      const interactionType = "click";
+      const score = 1;
+
+      axios.post('http://127.0.0.1:5555/update-interactions', {
+        user_id: userId,
+        product_id: productId,
+        interaction_type: interactionType,
+        score: score
+      })
+      .then(response => {
+        if (response.data.message === 'Interactions updated successfully') {
+          console.log('Interactions updated successfully.');
+        } else {
+          console.error('Failed to update interactions:', response.data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    }
   };
 
   return (
@@ -76,7 +103,11 @@ function HomePage() {
         onAuthClick={() => setIsAuthPopupOpen(true)} 
         onLogout={handleLogout} 
       />
-      <ProductList products={filteredProducts} loggedInUser={loggedInUser}/>
+      <ProductList 
+        products={filteredProducts} 
+        loggedInUser={loggedInUser}
+        onProductClick={handleProductClick}
+      />
       <Pagination 
         currentPage={currentPage} 
         totalPages={totalPages} 

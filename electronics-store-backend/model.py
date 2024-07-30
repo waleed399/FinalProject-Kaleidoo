@@ -60,19 +60,19 @@ class RecommendationEngine:
         popular_items_df = self.product_df.filter(col("item_id_numeric").isin(popular_items))
         return popular_items_df.limit(top_n)
 
-    # def recommend_for_new_user_interactions(self, new_user_interactions, top_n=3):
-    #     # Create a DataFrame from new_user_interactions
-    #     interaction_data = [(0, int(item_id), interaction) for item_id, interaction in new_user_interactions.items()]
-    #     interactions_df = self.spark.createDataFrame(interaction_data, ["user_id", "item_id_numeric", "interaction"])
+    def recommend_for_new_user_interactions(self, new_user_interactions, top_n=3):
+        # Create a DataFrame from new_user_interactions
+        interaction_data = [(0, int(item_id), interaction) for item_id, interaction in new_user_interactions.items()]
+        interactions_df = self.spark.createDataFrame(interaction_data, ["user_id", "item_id_numeric", "interaction"])
         
-    #     # Generate predictions using the ALS model
-    #     new_user_model = self.model.transform(interactions_df)
+        # Generate predictions using the ALS model
+        new_user_model = self.model.transform(interactions_df)
         
-    #     # Filter predictions for positive values and order by prediction
-    #     new_user_recs = new_user_model.filter(col("prediction") > 0).orderBy(desc("prediction")).select("item_id_numeric").limit(top_n)
+        # Filter predictions for positive values and order by prediction
+        new_user_recs = new_user_model.filter(col("prediction") > 0).orderBy(desc("prediction")).select("item_id_numeric").limit(top_n)
         
-    #     # Fetch the recommended items
-    #     recommended_item_ids = new_user_recs.rdd.flatMap(lambda x: x).collect()
-    #     recommended_items_df = self.product_df.filter(col("item_id_numeric").isin(recommended_item_ids))
+        # Fetch the recommended items
+        recommended_item_ids = new_user_recs.rdd.flatMap(lambda x: x).collect()
+        recommended_items_df = self.product_df.filter(col("item_id_numeric").isin(recommended_item_ids))
         
-    #     return recommended_items_df.limit(top_n)
+        return recommended_items_df.limit(top_n)
