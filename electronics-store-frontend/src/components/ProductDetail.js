@@ -1,5 +1,6 @@
-import React, { useState } from 'react'; // Removed useEffect import
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios for API requests
 import '../styling/ProductDetail.css';
 import imageMapping from '../../src/imageMapping';
 import NotificationPopup from './NotificationPopup';
@@ -12,29 +13,40 @@ const generateRandomPrice = (min = 10, max = 100) => {
 function ProductDetail({ product }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loggedInUser } = location.state || {}; // Access loggedInUser from state
+  const { loggedInUser, userId } = location.state || {};
 
-  // State for managing popup visibility and message
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-
-  // State for storing the price, initialized only once
   const [price] = useState(product.price || generateRandomPrice());
 
-  // Use the product name to get the correct image URL from the mapping
-  const imageUrl = `${process.env.PUBLIC_URL}/images/${imageMapping[product.name]}`;
+  const imageUrl = `${process.env.PUBLIC_URL}/images/${imageMapping[product.name.replace(/\//g, ':')] || 'placeholder.jpg'}`;
 
-  // Button click handler
   const handlePurchaseClick = () => {
-    if (loggedInUser) {
-      // Proceed with purchase
-      setPopupMessage('Product purchased successfully!');
-      setShowPopup(true);
+    const userIdFromLocalStorage = localStorage.getItem('userId'); // Retrieve user ID from local storage
+    if (loggedInUser && userIdFromLocalStorage) {
+      axios.post('http://127.0.0.1:5555/update-interactions', {
+        user_id: userIdFromLocalStorage, // Use user ID from local storage
+        product_id: product.id,
+        interaction_type: 'purchase',
+        score: 5
+      })
+      .then(response => {
+        if (response.data.message === 'Interactions updated successfully') {
+          setPopupMessage('Product purchased successfully!');
+        } else {
+          setPopupMessage('Failed to update interactions.');
+        }
+        setShowPopup(true);
 
-      // Navigate back to the main page after a delay
-      setTimeout(() => {
-        navigate('/'); // Navigate back to the main page after a delay
-      }, 3000); // Adjust the delay as needed
+        setTimeout(() => {
+          navigate('/'); 
+        }, 3000);
+      })
+      .catch(error => {
+        setPopupMessage('Error occurred while updating interactions.');
+        setShowPopup(true);
+        console.error('Error:', error);
+      });
     } else {
       setPopupMessage('You need to be logged in to make a purchase.');
       setShowPopup(true);
@@ -48,7 +60,6 @@ function ProductDetail({ product }) {
       <p>Price: ${price}</p>
       <button onClick={handlePurchaseClick}>Purchase</button>
 
-      {/* Conditionally render the NotificationPopup */}
       {showPopup && (
         <NotificationPopup
           message={popupMessage}

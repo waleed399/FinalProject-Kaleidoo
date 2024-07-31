@@ -36,6 +36,7 @@ users_collection = db.users
 counters_collection = db.counters  # Collection to keep track of counters
 interactions_collection = db.interactions
 products_names_collection = db.products_names
+recommendations_collection = db.recommendations
 # Kafka producer configuration
 producer = KafkaProducer(
     bootstrap_servers='localhost:9092',
@@ -61,7 +62,6 @@ consumer = KafkaConsumer(
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
-# Kafka consumer configuration
 def kafka_consumer():
     consumer = KafkaConsumer(
         'user-interactions',
@@ -81,11 +81,18 @@ def kafka_consumer():
             # Generate recommendations for an existing user
             recommendations_df = recommendation_engine.recommend_items(user_id, product_scores)
         else:
+            print("its a new user !!!!!!")
             # Handle new users
             recommendations_df = recommendation_engine.recommend_for_new_user()
 
         recommendations_list = recommendations_df.collect() if recommendations_df else []
-        print(f"Recommendations for user {user_id}: {recommendations_list}")
+
+        # Store recommendations in MongoDB or cache
+        recommendations_collection.update_one(
+            {'user_id': user_id},
+            {'$set': {'recommendations': recommendations_list}},
+            upsert=True
+        )
 
 # Helper function to get the next sequence value for user_id
 def get_next_sequence_value(sequence_name):
@@ -220,16 +227,21 @@ def login_user():
 
 @app.route('/update-interactions', methods=['POST'])
 def update_interactions():
-    print("Received request")
     try:
         data = request.get_json()
+        print("Request data:", data)
+
         user_id = data.get('user_id')
         product_id = data.get('product_id')
+        search_query = data.get('search_query')  # New field for search queries
         interaction_type = data.get('interaction_type')
         score = data.get('score')
 
-        if not user_id or not product_id or not interaction_type or not score:
+        if not user_id or not interaction_type or not score:
             return jsonify({'error': 'Missing required fields'}), 400
+
+        if interaction_type == "search" and not search_query:
+            return jsonify({'error': 'Missing search query for search interaction'}), 400
 
         # Determine interaction score
         interaction_score = 0
@@ -242,54 +254,94 @@ def update_interactions():
         else:
             return jsonify({'error': 'Invalid interaction type'}), 400
 
-        # Update or insert the interaction record
-        interaction = interactions_collection.find_one({
-            'user_id': user_id,
-            'interactions.product_id': product_id
-        })
+        # Define interaction document
+        interaction_doc = {
+            'product_id': product_id,
+            'interaction_type': interaction_type,
+            'score': interaction_score,
+            'timestamp': datetime.utcnow()
+        }
 
-        if interaction:
-            # Update the existing interaction score
-            result = interactions_collection.update_one(
+        if interaction_type == "search":
+            interaction_doc.pop('product_id', None)  # Remove product_id for search interactions
+
+        # Update or insert the interaction record
+        user_interactions = interactions_collection.find_one({'user_id': user_id})
+
+        if user_interactions:
+            if interaction_type == "search":
+                # Update or insert search interaction
+                existing_interaction = next((i for i in user_interactions.get('interactions', []) if i['interaction_type'] == interaction_type and i.get('search_query') == search_query), None)
+                if existing_interaction:
+                    result = interactions_collection.update_one(
+                        {
+                            'user_id': user_id,
+                            'interactions.interaction_type': interaction_type,
+                            'interactions.search_query': search_query
+                        },
+                        {
+                            '$inc': {'interactions.$.score': interaction_score},
+                            '$set': {'interactions.$.timestamp': datetime.utcnow()}
+                        }
+                    )
+                else:
+                    result = interactions_collection.update_one(
+                        {'user_id': user_id},
+                        {
+                            '$push': {'interactions': {**interaction_doc, 'search_query': search_query}},
+                            '$inc': {'action_count': 1}
+                        },
+                        upsert=True
+                    )
+            else:
+                # Check if interaction already exists
+                existing_interaction = next((i for i in user_interactions.get('interactions', []) if i['product_id'] == product_id and i['interaction_type'] == interaction_type), None)
+                
+                if existing_interaction:
+                    # Update existing interaction
+                    result = interactions_collection.update_one(
+                        {
+                            'user_id': user_id,
+                            'interactions.product_id': product_id,
+                            'interactions.interaction_type': interaction_type
+                        },
+                        {
+                            '$inc': {'interactions.$.score': interaction_score},
+                            '$set': {'interactions.$.timestamp': datetime.utcnow()}
+                        }
+                    )
+                else:
+                    # Add new interaction
+                    result = interactions_collection.update_one(
+                        {'user_id': user_id},
+                        {
+                            '$push': {'interactions': interaction_doc},
+                            '$inc': {'action_count': 1}
+                        },
+                        upsert=True
+                    )
+        else:
+            # User doesn't have any interactions yet, create a new record
+            if interaction_type == "search":
+                interaction_doc['search_query'] = search_query
+            result = interactions_collection.insert_one(
                 {
                     'user_id': user_id,
-                    'interactions.product_id': product_id
-                },
-                {
-                    '$inc': {
-                        'interactions.$.score': interaction_score
-                    },
-                    '$set': {'interactions.$.timestamp': datetime.utcnow()}
+                    'interactions': [interaction_doc],
+                    'action_count': 1 
                 }
-            )
-        else:
-            # Insert new interaction
-            result = interactions_collection.update_one(
-                {'user_id': user_id},
-                {
-                    '$push': {
-                        'interactions': {
-                            'product_id': product_id,
-                            'interaction_type': interaction_type,
-                            'score': interaction_score,
-                            'timestamp': datetime.utcnow()
-                        }
-                    },
-                    '$inc': {'action_count': 1}
-                },
-                upsert=True
             )
 
         # Check if the user has reached the action threshold
         user = interactions_collection.find_one({'user_id': user_id})
         if user and user.get('action_count', 0) >= 5:
-            product_scores = {interaction['product_id']: interaction['score'] for interaction in user.get('interactions', [])}
+            product_scores = {interaction['product_id']: interaction['score'] for interaction in user.get('interactions', []) if 'product_id' in interaction}
+            print("Sending to Kafka:", {'user_id': user_id, 'product_scores': product_scores})
             # Send to Kafka
             interaction_data = {
                 'user_id': user_id,
                 'product_scores': product_scores
             }
-            print(product_scores)
             producer.send('user-interactions', value=interaction_data)
             
             # Reset user action count
@@ -300,6 +352,24 @@ def update_interactions():
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
 
+    
+@app.route('/get-recommendations', methods=['GET'])
+def get_recommendations():
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'user_id is required'}), 400
+    
+    # Fetch recommendations from MongoDB
+    recommendations = recommendations_collection.find_one({'user_id': user_id})
+    
+    if recommendations and 'recommendations' in recommendations:
+        return jsonify({'recommendations': recommendations['recommendations']}), 200
+    else:
+        # Return an empty array to indicate no recommendations found
+        return jsonify({'There are no recommendations for you yet ! : recommendations': []}), 200
+
+    
 # Run Kafka consumer in a background thread
 consumer_thread = threading.Thread(target=kafka_consumer)
 consumer_thread.start()

@@ -23,9 +23,10 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
       setPopupMessage(response.data.message);
       setShowPopup(true);
       setIsLoading(false);
-      setTimeout(() => {
+      setTimeout(async () => {
         setShowPopup(false);
-        onClose();
+        // Automatically log in the user after successful registration
+        await handleLogin();
       }, 2000);
     } catch (error) {
       setPopupMessage(error.response ? error.response.data.error : 'An error occurred');
@@ -41,21 +42,18 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
         username,
         password
       });
-      setPopupMessage(response.data.message);
-      setShowPopup(true);
       setIsLoading(false);
-      setTimeout(() => {
-        setShowPopup(false);
-        // Pass user_id and access_token to onLoginSuccess
-        onLoginSuccess(username, response.data.user_id, response.data.access_token);
-        onClose();
-      }, 2000);
+      localStorage.setItem('userId', response.data.user_id); // Store user ID in local storage
+      localStorage.setItem('accessToken', response.data.access_token); // Store access token in local storage
+      onLoginSuccess(username, response.data.user_id, response.data.access_token);
+      onClose();
     } catch (error) {
       setPopupMessage(error.response ? error.response.data.error : 'An error occurred');
       setShowPopup(true);
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="auth-popup">
