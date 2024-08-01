@@ -17,9 +17,10 @@ function HomePage() {
   const [userId, setUserId] = useState(localStorage.getItem('userId'));
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
   const [recommendedProducts, setRecommendedProducts] = useState([]);
-  const [isNewUser, setIsNewUser] = useState(true);  // New state to determine user type
+  const [isNewUser, setIsNewUser] = useState(true);
 
   const productsPerPage = 12;
+  const defaultImageUrl = '/images/default_no_img.jpg'; // Default image URL
 
   useEffect(() => {
     async function fetchProducts() {
@@ -52,20 +53,20 @@ function HomePage() {
 
   const handleLoginSuccess = (username, userId, accessToken) => {
     setLoggedInUser(username);
-    setUserId(userId); // Store the user ID
-    setAccessToken(accessToken); // Store the access token
+    setUserId(userId);
+    setAccessToken(accessToken);
     localStorage.setItem('loggedInUser', username);
-    localStorage.setItem('userId', userId); // Store user ID in localStorage
-    localStorage.setItem('accessToken', accessToken); // Store access token in localStorage
+    localStorage.setItem('userId', userId);
+    localStorage.setItem('accessToken', accessToken);
     setIsAuthPopupOpen(false);
-    fetchRecommendations(userId); // Fetch recommendations after login
+    fetchRecommendations(userId);
   };
 
   const handleLogout = () => {
     setLoggedInUser(null);
     setUserId(null);
     setAccessToken(null);
-    setRecommendedProducts([]); // Clear recommendations on logout
+    setRecommendedProducts([]);
     localStorage.removeItem('loggedInUser');
     localStorage.removeItem('userId');
     localStorage.removeItem('accessToken');
@@ -104,7 +105,7 @@ function HomePage() {
 
         axios.post('http://127.0.0.1:5555/update-interactions', {
             user_id: userId,
-            search_query: searchQuery,  // Pass the search query if needed
+            search_query: searchQuery,
             interaction_type: interactionType,
             score: score
         })
@@ -132,7 +133,6 @@ function HomePage() {
   
         let parsedRecommendations = [];
   
-        // Check if the format is for existing users
         if (
           Array.isArray(recommendations) &&
           Array.isArray(recommendations[0]) &&
@@ -145,11 +145,9 @@ function HomePage() {
             _id: `rec-${index}`,
             price: price,
             name: name,
-            image_url: imageUrls[index] || 'default_image_url'
+            image_url: imageUrls[index] || defaultImageUrl
           }));
-          setIsNewUser(false);  // Set to false for existing user
   
-        // Check if the format is for new users
         } else if (
           Array.isArray(recommendations) &&
           recommendations.every(item => typeof item === 'object' && item !== null && 'item_id_numeric' in item && 'name' in item)
@@ -159,11 +157,9 @@ function HomePage() {
             item_id_numeric: item.item_id_numeric || 'N/A',
             name: item.name || 'Unnamed Product',
             price: item.price || 'N/A',
-            image_url: item.image_url || 'default_image_url'
+            image_url: item.image_url || defaultImageUrl
           }));
-          setIsNewUser(true);  // Set to true for new user
-  
-        // Handle unexpected formats
+
         } else {
           console.error('Unexpected format for recommendations data:', recommendations);
           setRecommendedProducts([]);
@@ -204,21 +200,19 @@ function HomePage() {
         onProductClick={handleProductClick}
       />
       {recommendedProducts.length > 0 && (
-      <div className="recommended-products">
-        <h2>{isNewUser ? "Our Top Products" : "Recommended for You"}</h2>
-        <div className="recommended-products-list">
-          {recommendedProducts.map(product => (
-            <div key={product._id} className="recommended-product-card">
-              <img src={product.image_url} alt={product.name} />
-              <h3>{product.name}</h3>
-              {product.price !== 'N/A' && <p>${product.price}</p>}
-              <button onClick={() => handleProductClick(product._id)}>View Details</button>
-            </div>
-          ))}
+        <div className="recommended-products">
+          <h2>{"Recommended For You"}</h2>
+          <div className="recommended-products-list">
+            {recommendedProducts.map(product => (
+              <div key={product._id} className="recommended-product-card">
+                <img src={product.image_url} alt={product.name} />
+                <h3>{product.name}</h3>
+                {product.price !== 'N/A' && <p>${product.price}</p>}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    )}
-
+      )}
       <Pagination 
         currentPage={currentPage} 
         totalPages={totalPages} 

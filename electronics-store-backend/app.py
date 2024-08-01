@@ -127,9 +127,9 @@ def get_next_sequence_value(sequence_name):
 def get_products():
     try:
         page = int(request.args.get('page', 1))
-        limit = 12  # Set limit to 12 products per page
-        skip = (page - 1) * limit
-
+        limit = 13 if page == 1 else 12  # Return 13 products on the first page, 12 on subsequent pages
+        skip = (page - 1) * 12  # Skip should be based on the size of pages after the first one
+        
         # Get distinct products with shortest names, limit to 50 products
         pipeline = [
             {"$group": {
@@ -151,7 +151,10 @@ def get_products():
         # Apply pagination
         paginated_products = products[skip: skip + limit]
 
-        total_pages = (len(products) // limit) + (1 if len(products) % limit > 0 else 0)
+        total_products = len(products)
+        total_pages = (total_products // 12) + (1 if total_products % 12 > 0 else 0)
+        if page == 1:
+            total_pages = (total_products // 13) + (1 if total_products % 13 > 0 else 0)
 
         products_list = [{
             'id': product.get('_id'),
@@ -168,6 +171,7 @@ def get_products():
     except Exception as e:
         print(f"Error: {e}")  # Log error message
         return jsonify({'error': str(e)}), 500
+
 
 
 @app.route('/api/products/<id>', methods=['GET'])
@@ -243,6 +247,7 @@ def login_user():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/update-interactions', methods=['POST'])
 def update_interactions():

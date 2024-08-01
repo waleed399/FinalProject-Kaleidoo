@@ -30,7 +30,6 @@ function ProductItem({ product, loggedInUser, onProductClick, onPurchaseClick })
         <img src={imageUrl} alt={product.name} />
         <h2>{product.name}</h2>
       </Link>
-      <button onClick={handlePurchase}>Purchase</button> {/* Add a Purchase button */}
     </div>
   );
 }

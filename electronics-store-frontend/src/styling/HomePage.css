@@ -286,7 +286,6 @@ footer {
 .contact-button:hover {
   color: #0056b3;
 }
-
 /* HomePage.css */
 .recommended-products {
   margin: 20px 0;
@@ -300,15 +299,17 @@ footer {
 
 .recommended-product-card {
   border: 1px solid #ccc;
-  padding: 20px;
-  border-radius: 8px;
-  width: calc(33.333% - 20px);
+  padding: 10px;
+  border-radius: 2px;
+  width: 20%; /* Adjust to fit in the container */
   box-sizing: border-box;
+  background-color: #fff; /* Ensure consistent background color */
 }
 
 .recommended-product-card img {
-  max-width: 100%;
-  height: auto;
+  width: 50%;
+  height: 200px; /* Match the product card image height */
+  object-fit: cover;
   border-radius: 8px;
 }
 

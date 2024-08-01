@@ -1,4 +1,3 @@
-// src/components/MenuBar.js
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styling/MenuBar.css';
@@ -16,8 +15,7 @@ const MenuBar = ({ onSearch, onReset, loggedInUser, onAuthClick, onLogout }) => 
 
   const handleHomeClick = () => {
     setSearchInput('');
-    onSearch('');
-    onReset();
+    onReset(); // Just reset the state, do not perform a search
   };
 
   return (
