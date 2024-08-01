@@ -286,13 +286,10 @@ footer {
 .contact-button:hover {
   color: #0056b3;
 }
-.recommended-products {
-  padding: 20px;
-  background-color: #f9f9f9;
-}
 
-.recommended-products h2 {
-  margin-bottom: 20px;
+/* HomePage.css */
+.recommended-products {
+  margin: 20px 0;
 }
 
 .recommended-products-list {
@@ -302,36 +299,38 @@ footer {
 }
 
 .recommended-product-card {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 5px;
-  width: 200px;
-  text-align: center;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+  width: calc(33.333% - 20px);
+  box-sizing: border-box;
 }
 
 .recommended-product-card img {
   max-width: 100%;
   height: auto;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 10px;
+  border-radius: 8px;
 }
 
 .recommended-product-card h3 {
-  font-size: 16px;
+  font-size: 1.2em;
   margin: 10px 0;
 }
 
 .recommended-product-card p {
-  font-size: 14px;
+  font-size: 1em;
   color: #333;
 }
 
 .recommended-product-card button {
+  padding: 10px 20px;
   background-color: #007bff;
-  color: #fff;
+  color: white;
   border: none;
-  padding: 10px;
   border-radius: 5px;
   cursor: pointer;
+}
+
+.recommended-product-card button:hover {
+  background-color: #0056b3;
 }

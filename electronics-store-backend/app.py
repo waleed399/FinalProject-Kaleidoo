@@ -62,6 +62,12 @@ consumer = KafkaConsumer(
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
+from pyspark.sql import SparkSession
+from pyspark.sql import Row
+
+# Initialize Spark session
+spark = SparkSession.builder.appName("KafkaConsumerApp").getOrCreate()
+
 def kafka_consumer():
     consumer = KafkaConsumer(
         'user-interactions',
@@ -74,25 +80,38 @@ def kafka_consumer():
         user_id = interaction_data['user_id']
         product_scores = interaction_data['product_scores']
 
+        # Convert user_id to integer if necessary
+        if isinstance(user_id, str) and user_id.isdigit():
+            user_id = int(user_id)
+
         # Fetch the user from MongoDB
-        user = users_collection.find_one({'user_id': user_id})
+        user = electronics_data_collection.find_one({'user_id': user_id})
 
         if user:
+            print("It's not a new user !!!!!!")
             # Generate recommendations for an existing user
             recommendations_df = recommendation_engine.recommend_items(user_id, product_scores)
         else:
-            print("its a new user !!!!!!")
+            print("It's a new user !!!!!!")
             # Handle new users
             recommendations_df = recommendation_engine.recommend_for_new_user()
 
-        recommendations_list = recommendations_df.collect() if recommendations_df else []
+        # Check if recommendations_df is a list
+        if isinstance(recommendations_df, list):
+            # Convert the list to a DataFrame
+            recommendations_df = spark.createDataFrame([Row(**rec) for rec in recommendations_df])
 
-        # Store recommendations in MongoDB or cache
-        recommendations_collection.update_one(
-            {'user_id': user_id},
-            {'$set': {'recommendations': recommendations_list}},
-            upsert=True
-        )
+        # Collect recommendations as a list of dictionaries
+        if recommendations_df:
+            recommendations_list = recommendations_df.select("item_id_numeric", "name").rdd.map(lambda row: {'item_id_numeric': row['item_id_numeric'], 'name': row['name']}).collect()
+
+            # Store recommendations in MongoDB or cache
+            recommendations_collection.update_one(
+                {'user_id': user_id},
+                {'$set': {'recommendations': recommendations_list}},
+                upsert=True
+            )
+
 
 # Helper function to get the next sequence value for user_id
 def get_next_sequence_value(sequence_name):
@@ -355,11 +374,16 @@ def update_interactions():
     
 @app.route('/get-recommendations', methods=['GET'])
 def get_recommendations():
-    user_id = request.args.get('user_id')
+    user_id_str = request.args.get('user_id')
     
-    if not user_id:
+    if not user_id_str:
         return jsonify({'error': 'user_id is required'}), 400
     
+    try:
+        user_id = int(user_id_str)  # Convert user_id to integer
+    except ValueError:
+        return jsonify({'error': 'Invalid user_id format'}), 400
+
     # Fetch recommendations from MongoDB
     recommendations = recommendations_collection.find_one({'user_id': user_id})
     
@@ -367,9 +391,9 @@ def get_recommendations():
         return jsonify({'recommendations': recommendations['recommendations']}), 200
     else:
         # Return an empty array to indicate no recommendations found
-        return jsonify({'There are no recommendations for you yet ! : recommendations': []}), 200
+        return jsonify({'recommendations': []}), 200
 
-    
+ 
 # Run Kafka consumer in a background thread
 consumer_thread = threading.Thread(target=kafka_consumer)
 consumer_thread.start()
