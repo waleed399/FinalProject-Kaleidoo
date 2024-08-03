@@ -6,7 +6,7 @@ header .store-name {
   display: flex;
   align-items: center;
   font-family: 'Roboto Condensed', sans-serif; /* Bold and eye-catching */
-  font-size: 2.5rem; /* Larger font size for prominence */
+  font-size: 3rem; /* Larger font size for prominence */
   color: #fff; /* Text color */
   background: linear-gradient(45deg, #1e88e5, #e74c3c); /* Gradient background */
   -webkit-background-clip: text; /* Clip background to text */

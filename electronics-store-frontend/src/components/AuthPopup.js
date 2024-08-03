@@ -4,7 +4,7 @@ import '../styling/AuthPopup.css';
 import NotificationPopup from './NotificationPopup';
 
 const AuthPopup = ({ onClose, onLoginSuccess }) => {
-  const [isRegister, setIsRegister] = useState(true);
+  const [isRegister, setIsRegister] = useState(false); // Initially show the login form
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -53,7 +53,6 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
       setIsLoading(false);
     }
   };
-  
 
   return (
     <div className="auth-popup">

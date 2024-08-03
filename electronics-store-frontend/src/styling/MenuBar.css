@@ -1,74 +1,93 @@
 /* Menu Bar Styling */
 .menu-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 30px;
   background: linear-gradient(135deg, #343a40, #495057); /* Gradient background for depth */
   color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadow for depth */
   border-bottom: 2px solid #007bff; /* Accent bottom border */
 }
 
+/* Left Section (Navigation Links) */
+.menu-bar .left-section {
+  display: flex;
+  align-items: center;
+}
+
+/* Right Section (Search Bar and Auth Buttons) */
+.menu-bar .right-section {
+  display: flex;
+  align-items: center;
+}
+
 /* Navigation Links */
-.menu-bar a {
+.menu-bar .left-section a {
   margin-right: 25px;
   text-decoration: none;
   color: #e0e0e0; /* Light grey color */
   font-weight: bold;
-  font-size: 1.1rem;
-  transition: color 0.3s ease, transform 0.3s ease; /* Smooth color and transform transition */
+  font-size: 2rem;
+  transition: color 0.3s ease, transform 0.3s ease, text-shadow 0.3s ease;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.menu-bar a:hover {
-  color: #007bff; /* Primary color on hover */
-  transform: translateY(-2px); /* Slight lift effect on hover */
+.menu-bar .left-section a:hover {
+  color: #007bff;
+  transform: translateY(-3px);
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 /* Search Bar Styling */
-.search-bar {
+.menu-bar .search-bar {
   display: flex;
   align-items: center;
   border-radius: 50px; /* Fully rounded corners for a modern look */
   overflow: hidden; /* Ensures no overflow */
   background-color: #495057; /* Dark background to match menu bar */
   padding: 5px; /* Adds space around the search bar */
+  margin-right: 20px; /* Space between search bar and auth section */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
 }
 
-.search-bar input {
+.menu-bar .search-bar input {
   padding: 10px;
-  border: 2px solid #6c757d; /* Subtle border color to blend with background */
+  border: 2px solid #6c757d; /* Adjusted to match dark theme */
   border-radius: 50px 0 0 50px; /* Rounded left corners */
   background-color: #343a40; /* Dark background to match menu bar */
   color: white;
   font-size: 1rem;
   outline: none; /* Removes default outline */
   width: 200px; /* Fixed width to keep consistent size */
+  transition: background-color 0.3s ease, border-color 0.3s ease; /* Smooth transitions */
 }
 
-.search-bar button {
+.menu-bar .search-bar input:focus {
+  background-color: #6c757d; /* Lighten background on focus */
+  border-color: #007bff; /* Primary color border on focus */
+}
+
+.menu-bar .search-bar button {
   padding: 10px 20px;
   border: none;
   border-radius: 0 50px 50px 0; /* Rounded right corners */
-  background-color: #007bff; /* Primary color */
+  background-color: #ff0000; /* Primary color */
   color: white;
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth color and transform transition */
 }
 
-.search-bar button:hover {
-  background-color: #0056b3; /* Darker shade on hover */
+.menu-bar .search-bar button:hover {
+  background-color: #7c0202; /* Darker shade on hover */
   transform: scale(1.05); /* Slight scale effect on hover */
 }
 
 /* Auth Section Styling */
-.auth-section {
+.menu-bar .auth-section {
   display: flex;
   align-items: center;
 }
 
-.auth-button, .logout-button {
+.menu-bar .auth-button, .menu-bar .logout-button {
   background-color: #007bff; /* Primary color background */
   color: white;
   border: none;
@@ -76,18 +95,28 @@
   margin-left: 20px;
   border-radius: 25px; /* Rounded button */
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth color and transform transition */
+  transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions */
   font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
 }
 
-.auth-button:hover, .logout-button:hover {
+.menu-bar .auth-button:hover, .menu-bar .logout-button:hover {
   background-color: #0056b3; /* Darker shade on hover */
   transform: scale(1.05); /* Slight scale effect on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
+}
+
+.menu-bar .auth-button:active, .menu-bar .logout-button:active {
+  background-color: #004494; /* Darker shade when pressed */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Subtle shadow effect when pressed */
+  transform: scale(0.98); /* Slight scale down effect when pressed */
 }
 
 /* Welcome Message */
-.welcome-message {
+.menu-bar .welcome-message {
   margin-right: 15px;
   font-size: 1.1rem;
   font-weight: bold;
+  color: #f0f2f5; /* Light color for contrast */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* Subtle shadow for better readability */
 }
