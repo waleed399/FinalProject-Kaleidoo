@@ -116,5 +116,12 @@ class RecommendationEngine:
         except Exception as e:
             print(f"Error in recommend_for_new_user_interactions: {e}")
             raise e
+        
+    def save_model(self):
+        """Save the model to the specified path."""
+        if self.model:
+            self.model.save(self.model_path)
+        else:
+            print("No model to save.")
 
 

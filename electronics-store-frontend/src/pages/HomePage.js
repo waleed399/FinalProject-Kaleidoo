@@ -17,7 +17,6 @@ function HomePage() {
   const [userId, setUserId] = useState(localStorage.getItem('userId'));
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
   const [recommendedProducts, setRecommendedProducts] = useState([]);
-  const [isNewUser, setIsNewUser] = useState(true);
 
   const productsPerPage = 12;
   const defaultImageUrl = '/images/default_no_img.jpg'; // Default image URL
@@ -120,7 +119,8 @@ function HomePage() {
             console.error('Error:', error);
         });
     }
-  };
+};
+
 
   const fetchRecommendations = async (userId) => {
     try {

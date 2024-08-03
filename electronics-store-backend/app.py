@@ -4,12 +4,19 @@ from flask import Flask, json, jsonify, request
 from pymongo import MongoClient
 import certifi
 import os
+from sklearn.preprocessing import LabelEncoder
+from pyspark.sql.functions import col
+from pyspark.sql import SparkSession
+from pyspark.sql import Row
 from kafka import KafkaProducer, KafkaConsumer
 from pyspark.sql import SparkSession
 from model import RecommendationEngine
 from flask_cors import CORS
+from pyspark.ml.recommendation import ALS
 from dotenv import load_dotenv
 import bcrypt
+from pyspark.sql.types import StructType, StructField, StringType, FloatType, IntegerType
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 # Load environment variables from .env file
@@ -42,9 +49,20 @@ producer = KafkaProducer(
     bootstrap_servers='localhost:9092',
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
-
 # Initialize SparkSession
-spark = SparkSession.builder.appName("RecommendationEngine").getOrCreate()
+from pyspark.sql import SparkSession
+
+# Create Spark session
+spark = SparkSession.builder \
+    .appName("RecommendationEngine") \
+    .config("spark.mongodb.read.connection.uri", "mongodb+srv://Cluster43725:ZUJNUFBXe256@cluster43725.ce4eyvw.mongodb.net/electronics_store") \
+    .config("spark.mongodb.write.connection.uri", "mongodb+srv://Cluster43725:ZUJNUFBXe256@cluster43725.ce4eyvw.mongodb.net/electronics_store") \
+    .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.1")\
+    .getOrCreate()
+        # .config("spark.jars", "mongo-spark-connector_2.12-10.1.1.jar,mongodb-driver-sync-4.4.0.jar,bson-4.4.0.jar") \
+
+
+
 
 # Load product DataFrame
 product_data = list(products_names_collection.find({}, {'_id': 0}))
@@ -61,12 +79,6 @@ consumer = KafkaConsumer(
     bootstrap_servers='localhost:9092',
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
-
-from pyspark.sql import SparkSession
-from pyspark.sql import Row
-
-# Initialize Spark session
-spark = SparkSession.builder.appName("KafkaConsumerApp").getOrCreate()
 
 def kafka_consumer():
     consumer = KafkaConsumer(
@@ -257,7 +269,7 @@ def update_interactions():
 
         user_id = data.get('user_id')
         product_id = data.get('product_id')
-        search_query = data.get('search_query')  # New field for search queries
+        search_query = data.get('search_query')
         interaction_type = data.get('interaction_type')
         score = data.get('score')
 
@@ -267,7 +279,6 @@ def update_interactions():
         if interaction_type == "search" and not search_query:
             return jsonify({'error': 'Missing search query for search interaction'}), 400
 
-        # Determine interaction score
         interaction_score = 0
         if interaction_type == "click":
             interaction_score = 1
@@ -278,23 +289,21 @@ def update_interactions():
         else:
             return jsonify({'error': 'Invalid interaction type'}), 400
 
-        # Define interaction document
         interaction_doc = {
-            'product_id': product_id,
             'interaction_type': interaction_type,
             'score': interaction_score,
             'timestamp': datetime.utcnow()
         }
+        if interaction_type != "search":
+            interaction_doc['product_id'] = product_id
 
         if interaction_type == "search":
-            interaction_doc.pop('product_id', None)  # Remove product_id for search interactions
+            interaction_doc['search_query'] = search_query
 
-        # Update or insert the interaction record
         user_interactions = interactions_collection.find_one({'user_id': user_id})
 
         if user_interactions:
             if interaction_type == "search":
-                # Update or insert search interaction
                 existing_interaction = next((i for i in user_interactions.get('interactions', []) if i['interaction_type'] == interaction_type and i.get('search_query') == search_query), None)
                 if existing_interaction:
                     result = interactions_collection.update_one(
@@ -312,17 +321,14 @@ def update_interactions():
                     result = interactions_collection.update_one(
                         {'user_id': user_id},
                         {
-                            '$push': {'interactions': {**interaction_doc, 'search_query': search_query}},
+                            '$push': {'interactions': interaction_doc},
                             '$inc': {'action_count': 1}
                         },
                         upsert=True
                     )
             else:
-                # Check if interaction already exists
-                existing_interaction = next((i for i in user_interactions.get('interactions', []) if i['product_id'] == product_id and i['interaction_type'] == interaction_type), None)
-                
+                existing_interaction = next((i for i in user_interactions.get('interactions', []) if i.get('product_id') == product_id and i['interaction_type'] == interaction_type), None)
                 if existing_interaction:
-                    # Update existing interaction
                     result = interactions_collection.update_one(
                         {
                             'user_id': user_id,
@@ -335,7 +341,6 @@ def update_interactions():
                         }
                     )
                 else:
-                    # Add new interaction
                     result = interactions_collection.update_one(
                         {'user_id': user_id},
                         {
@@ -345,7 +350,6 @@ def update_interactions():
                         upsert=True
                     )
         else:
-            # User doesn't have any interactions yet, create a new record
             if interaction_type == "search":
                 interaction_doc['search_query'] = search_query
             result = interactions_collection.insert_one(
@@ -356,27 +360,23 @@ def update_interactions():
                 }
             )
 
-        # Check if the user has reached the action threshold
         user = interactions_collection.find_one({'user_id': user_id})
         if user and user.get('action_count', 0) >= 5:
             product_scores = {interaction['product_id']: interaction['score'] for interaction in user.get('interactions', []) if 'product_id' in interaction}
             print("Sending to Kafka:", {'user_id': user_id, 'product_scores': product_scores})
-            # Send to Kafka
             interaction_data = {
                 'user_id': user_id,
                 'product_scores': product_scores
             }
             producer.send('user-interactions', value=interaction_data)
-            
-            # Reset user action count
             interactions_collection.update_one({'user_id': user_id}, {'$set': {'action_count': 0}})
 
         return jsonify({'message': 'Interactions updated successfully'}), 200
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
-
     
+
 @app.route('/get-recommendations', methods=['GET'])
 def get_recommendations():
     user_id_str = request.args.get('user_id')
@@ -398,7 +398,111 @@ def get_recommendations():
         # Return an empty array to indicate no recommendations found
         return jsonify({'recommendations': []}), 200
 
- 
+def retrain_model(interactions_collection, model_path):
+    # Load data from MongoDB into a DataFrame
+       
+    def load_data_from_mongo():
+        # Specify the MongoDB database and collection names
+        df = spark.read \
+            .format("mongo") \
+            .option("uri", "mongodb+srv://Cluster43725:ZUJNUFBXe256@cluster43725.ce4eyvw.mongodb.net/electronics_store.electronics_data") \
+            .load()
+        return df
+
+    # Load the existing data into a DataFrame
+    electronics_data_df = load_data_from_mongo()
+    # Prepare existing DataFrame
+    # Prepare existing DataFrame
+    prepared_existing_df = electronics_data_df.select(
+        col("user_id").cast(IntegerType()),  # Ensure user_id is cast to IntegerType
+        col("encoded_product_id").alias("product_id").cast(IntegerType()),  # Ensure product_id is cast to IntegerType
+        col("interaction").alias("score").cast(FloatType())  # Ensure score is cast to FloatType
+    )
+
+    # Process new interactions data
+    interactions = list(interactions_collection.find({}))
+    if not interactions:
+        print("No interactions found in MongoDB.")
+        return
+
+    # Define schema for the interactions data
+    schema = StructType([
+        StructField("user_id", StringType(), True),
+        StructField("product_id", StringType(), True),
+        StructField("score", FloatType(), True)
+    ])
+
+    # Extract and flatten the interactions data
+    processed_data = []
+    for user_interactions in interactions:
+        user_id = user_interactions.get('user_id')
+        interactions_list = user_interactions.get('interactions', [])
+        for interaction in interactions_list:
+            product_id = interaction.get('product_id')
+            score = interaction.get('score')
+            processed_data.append({
+                'user_id': user_id,
+                'product_id': product_id,
+                'score': float(score)  # Ensure the score is a float
+            })
+
+    if not processed_data:
+        print("No processed data available for DataFrame creation.")
+        return
+
+    # Create DataFrame from processed data
+    interactions_df = spark.createDataFrame(processed_data, schema=schema)
+
+    # Convert PySpark DataFrame to Pandas DataFrame for encoding
+    pandas_df = interactions_df.toPandas()
+
+    # Apply LabelEncoder to 'product_id'
+    id_encoder = LabelEncoder()
+    pandas_df['encoded_product_id'] = id_encoder.fit_transform(pandas_df['product_id'])
+
+    # Convert back to PySpark DataFrame
+    interactions_df_encoded = spark.createDataFrame(pandas_df)
+
+    # Convert columns to IntegerType
+    interactions_df_encoded = interactions_df_encoded.withColumn("user_id", col("user_id").cast(IntegerType())) \
+                                                     .withColumn("encoded_product_id", col("encoded_product_id").cast(IntegerType())) \
+                                                     .withColumn("score", col("score").cast(FloatType()))
+
+    # Select and rename columns to match the existing DataFrame schema
+    interactions_df_encoded = interactions_df_encoded.select(
+        col("user_id"),
+        col("encoded_product_id").alias("product_id"),
+        col("score")
+    )
+
+    # Combine new and existing data
+    combined_df = prepared_existing_df.union(interactions_df_encoded)
+
+    # Check if combined_df is empty
+    if combined_df.count() == 0:
+        print("No data available for training.")
+        return
+
+    # Train the ALS model with combined data
+    als = ALS(userCol="user_id", itemCol="product_id", ratingCol="score", coldStartStrategy="drop")
+    model = als.fit(combined_df)
+
+    if model:
+        # Save model with overwrite mode
+        model.write().overwrite().save(model_path)
+        print("Model retrained and saved successfully.")
+    else:
+        print("No model to save.")
+        
+# Wrapper function to provide arguments for the retrain_model function
+def retrain_model_wrapper():
+    retrain_model(interactions_collection, model_path)
+
+# Setup the scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(retrain_model_wrapper, 'interval', weeks=1)  # Run retrain_model_wrapper every week
+scheduler.start()
+
 # Run Kafka consumer in a background thread
 consumer_thread = threading.Thread(target=kafka_consumer)
 consumer_thread.start()
