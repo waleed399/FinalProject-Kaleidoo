@@ -55,12 +55,10 @@ from pyspark.sql import SparkSession
 # Create Spark session
 spark = SparkSession.builder \
     .appName("RecommendationEngine") \
-    .config("spark.mongodb.read.connection.uri", "mongodb+srv://Cluster43725:ZUJNUFBXe256@cluster43725.ce4eyvw.mongodb.net/electronics_store") \
-    .config("spark.mongodb.write.connection.uri", "mongodb+srv://Cluster43725:ZUJNUFBXe256@cluster43725.ce4eyvw.mongodb.net/electronics_store") \
+    .config("spark.mongodb.read.connection.uri", app.config["MONGO_URI"]) \
+    .config("spark.mongodb.write.connection.uri", app.config["MONGO_URI"]) \
     .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.1")\
     .getOrCreate()
-        # .config("spark.jars", "mongo-spark-connector_2.12-10.1.1.jar,mongodb-driver-sync-4.4.0.jar,bson-4.4.0.jar") \
-
 
 
 
@@ -405,7 +403,8 @@ def retrain_model(interactions_collection, model_path):
         # Specify the MongoDB database and collection names
         df = spark.read \
             .format("mongo") \
-            .option("uri", "mongodb+srv://Cluster43725:ZUJNUFBXe256@cluster43725.ce4eyvw.mongodb.net/electronics_store.electronics_data") \
+            .option("uri",app.config["MONGO_URI"]) \
+            .option("spark.mongodb.input.collection", "electronics_data") \
             .load()
         return df
 
@@ -508,6 +507,7 @@ consumer_thread = threading.Thread(target=kafka_consumer)
 consumer_thread.start()
 
 if __name__ == "__main__":
+    retrain_model_wrapper()
     app.run(debug=True, port=5555)
 
 
