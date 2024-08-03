@@ -411,7 +411,6 @@ def retrain_model(interactions_collection, model_path):
     # Load the existing data into a DataFrame
     electronics_data_df = load_data_from_mongo()
     # Prepare existing DataFrame
-    # Prepare existing DataFrame
     prepared_existing_df = electronics_data_df.select(
         col("user_id").cast(IntegerType()),  # Ensure user_id is cast to IntegerType
         col("encoded_product_id").alias("product_id").cast(IntegerType()),  # Ensure product_id is cast to IntegerType
@@ -507,74 +506,4 @@ consumer_thread = threading.Thread(target=kafka_consumer)
 consumer_thread.start()
 
 if __name__ == "__main__":
-    retrain_model_wrapper()
     app.run(debug=True, port=5555)
-
-
-
-# # Initialize SparkSession
-# spark = SparkSession.builder.appName("RecommendationEngine").getOrCreate()
-# products_names_collection = db.products_names
-# # Load product DataFrame
-# product_data = list(products_names_collection.find({}, {'_id': 0}))
-# product_df = spark.createDataFrame(product_data)
-
-# # Print product_df to ensure it's loaded correctly
-# print(product_df.show())
-
-# # Initialize the recommendation engine
-# model_path = "electronics-store-backend/recommendation_model"
-# print(f"Model path: {model_path}")
-
-# # Add debugging to check model path and contents
-# import os
-
-# if os.path.exists(model_path):
-#     print(f"Model directory exists: {model_path}")
-#     print("Contents of model directory:")
-#     print(os.listdir(model_path))
-# else:
-#     print(f"Model directory does not exist: {model_path}")
-
-# try:
-#     recommendation_engine = RecommendationEngine(model_path, product_df)
-# except Exception as e:
-#     print(f"Failed to initialize RecommendationEngine: {e}")
-
-# def serialize_document(doc):
-#     """Convert BSON document to a JSON serializable format."""
-#     if doc is None:
-#         return None
-#     doc_copy = doc.copy()
-#     doc_copy.pop("_id", None)
-#     return doc_copy
-
-# #########################################
-# @app.route("/", methods=["GET"])
-# def index():
-#     try:
-#         user_id = 1  # For testing purposes, setting a static user_id
-#         new_user_interactions = {
-#             '11': 9,
-#             '23': 9,
-#             '232': 4,
-#             '156': 3
-#         }
-
-#         if user_id is None:
-#             return "Missing user_id parameter", 400
-
-#         user = electronics_data_collection.find_one({"user_id": user_id})
-#         if user:
-#             recommendations_df = recommendation_engine.recommend_items(user_id, new_user_interactions)
-#         else:
-#             recommendations_df = recommendation_engine.recommend_for_new_user()
-
-#         recommendations_list = recommendations_df.collect() if recommendations_df else []
-        
-#         return jsonify({
-#             "user": serialize_document(user) if user else user_id,
-#             "recommendations": recommendations_list
-#         })
-#     except Exception as e:
-#         return str(e), 500
