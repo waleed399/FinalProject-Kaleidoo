@@ -105,16 +105,19 @@ Visit http://localhost:8080 to view the application.
 🎉 Congratulations!
 Your application should now be up and running on your local Kubernetes cluster. Enjoy exploring!
 
-📂 Project Structure
+## 📂 Project Structure
 
 Here's a quick overview of the files you’ll find in this repository:
+
+```plaintext
 .
-├── backend-deployment.yaml # Backend Kubernetes deployment
-├── frontend-deployment.yaml # Frontend Kubernetes deployment
+├── backend-deployment.yaml   # Backend Kubernetes deployment
+├── frontend-deployment.yaml  # Frontend Kubernetes deployment
 ├── zookeeper-deployment.yaml # Zookeeper Kubernetes deployment
-├── kafka-deployment.yaml # Kafka Kubernetes deployment
-├── secret.yaml # Kubernetes secrets for the application
-└── README.md # You're reading it!
+├── kafka-deployment.yaml     # Kafka Kubernetes deployment
+├── secret.yaml               # Kubernetes secrets for the application
+└── README.md                 # You're reading it!
+
 
 Common Issues
 Pods not starting: Ensure that Docker and Kubernetes are running correctly on your machine.
@@ -122,3 +125,4 @@ Access issues: Verify the Kubernetes service configurations and port-forwarding 
 🤝 Contributing
 
 Contributions are welcome! If you have suggestions for improvements, please open an issue or submit a pull request.
+```
