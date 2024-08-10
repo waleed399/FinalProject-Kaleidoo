@@ -122,6 +122,8 @@ Here's a quick overview of the files you’ll find in this repository:
 Common Issues
 Pods not starting: Ensure that Docker and Kubernetes are running correctly on your machine.
 Access issues: Verify the Kubernetes service configurations and port-forwarding rules.
+
+
 🤝 Contributing
 
 Contributions are welcome! If you have suggestions for improvements, please open an issue or submit a pull request.
