@@ -24,10 +24,19 @@ class RecommendationEngine:
             if user_id in existing_users:
                 # Recommendations for an existing user
                 user_recs_for_user = self.model.recommendForUserSubset(self.spark.createDataFrame([(user_id,)], ["user_id"]), top_n)
+                # Print the column names of the DataFrame
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print(user_recs_for_user.columns)
+
                 recommendations = user_recs_for_user.select("recommendations").rdd.flatMap(lambda x: x).collect()[0]
-                recommended_item_ids = [row.item_id_numeric for row in recommendations]
+                # Print schema of recommendations DataFrame
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print("Content of recommendations:", recommendations)
+
+                recommended_item_ids = [row.product_id for row in recommendations] 
+                print("Recommended Item IDs:", recommended_item_ids)  # Debug print
                 recommended_items_df = self.product_df.filter(col("item_id_numeric").isin(recommended_item_ids))
-            
+                
                 # If new interactions are provided, combine with new items
                 if new_user_interactions:
                     new_item_ids = [item_id for item_id in new_user_interactions.keys()]
@@ -46,10 +55,11 @@ class RecommendationEngine:
             if recommended_items_df:
                 recommended_items_df = recommended_items_df.limit(top_n)
                 recommendations_list = recommended_items_df.select("item_id_numeric", "name").rdd.map(lambda row: {'item_id_numeric': row['item_id_numeric'], 'name': row['name']}).collect()
+                print("Recommendations List:", recommendations_list)  # Debug print
                 return recommendations_list
             
             return []
-        
+
         except Exception as e:
             print(f"Error in recommend_items: {e}")
             raise e
@@ -123,5 +133,4 @@ class RecommendationEngine:
             self.model.save(self.model_path)
         else:
             print("No model to save.")
-
 

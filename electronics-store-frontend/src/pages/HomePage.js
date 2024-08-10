@@ -24,7 +24,7 @@ function HomePage() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const response = await axios.get('http://127.0.0.1:5555/api/products', {
+        const response = await axios.get('http://localhost:5555/api/products', {
           params: { page: currentPage, limit: productsPerPage }
         });
 
@@ -77,7 +77,7 @@ function HomePage() {
       const interactionType = "click";
       const score = 1;
 
-      axios.post('http://127.0.0.1:5555/update-interactions', {
+      axios.post('http://localhost:5555/update-interactions', {
         user_id: userId,
         product_id: productId,
         interaction_type: interactionType,
@@ -102,7 +102,7 @@ function HomePage() {
         const interactionType = "search";
         const score = 3;
 
-        axios.post('http://127.0.0.1:5555/update-interactions', {
+        axios.post('http://localhost:5555/update-interactions', {
             user_id: userId,
             search_query: searchQuery,
             interaction_type: interactionType,
@@ -124,7 +124,7 @@ function HomePage() {
 
   const fetchRecommendations = async (userId) => {
     try {
-      const response = await axios.get('http://127.0.0.1:5555/get-recommendations', {
+      const response = await axios.get('http://localhost:5555/get-recommendations', {
         params: { user_id: userId }
       });
   

@@ -24,7 +24,7 @@ function ProductDetail({ product }) {
   const handlePurchaseClick = () => {
     const userIdFromLocalStorage = localStorage.getItem('userId'); // Retrieve user ID from local storage
     if (loggedInUser && userIdFromLocalStorage) {
-      axios.post('http://127.0.0.1:5555/update-interactions', {
+      axios.post('http://localhost:5555/update-interactions', {
         user_id: userIdFromLocalStorage, // Use user ID from local storage
         product_id: product.id,
         interaction_type: 'purchase',
@@ -57,9 +57,9 @@ function ProductDetail({ product }) {
     <div className="product-detail">
       <h1>{product.name}</h1>
       <img src={imageUrl} alt={product.name} />
-      <p>Price: ${price}</p>
+      <p className="price">Price: ${price}</p>
       <button onClick={handlePurchaseClick}>Purchase</button>
-
+  
       {showPopup && (
         <NotificationPopup
           message={popupMessage}
@@ -67,7 +67,7 @@ function ProductDetail({ product }) {
         />
       )}
     </div>
-  );
+  );  
 }
 
 export default ProductDetail;

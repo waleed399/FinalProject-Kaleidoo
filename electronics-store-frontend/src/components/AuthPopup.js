@@ -15,7 +15,7 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
   const handleRegister = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:5555/api/register', {
+      const response = await axios.post('http://localhost:5555/api/register', {
         username,
         password,
         email
@@ -38,7 +38,7 @@ const AuthPopup = ({ onClose, onLoginSuccess }) => {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:5555/api/login', {
+      const response = await axios.post('http://localhost:5555/api/login', {
         username,
         password
       });

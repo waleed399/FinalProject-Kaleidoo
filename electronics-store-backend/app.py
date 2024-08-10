@@ -1,4 +1,5 @@
 from datetime import datetime 
+from multiprocessing import Process
 import threading
 from flask import Flask, json, jsonify, request
 from pymongo import MongoClient
@@ -46,7 +47,7 @@ products_names_collection = db.products_names
 recommendations_collection = db.recommendations
 # Kafka producer configuration
 producer = KafkaProducer(
-    bootstrap_servers='localhost:9092',
+    bootstrap_servers='kafka-service:9092',
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 # Initialize SparkSession
@@ -65,34 +66,25 @@ spark = SparkSession.builder \
 # Load product DataFrame
 product_data = list(products_names_collection.find({}, {'_id': 0}))
 product_df = spark.createDataFrame(product_data)
-
+product_df.show()
 # Initialize the recommendation engine
 model_path = "./recommendation_model"
 print(f"Model path: {model_path}")
 recommendation_engine = RecommendationEngine(model_path, product_df)
 
-# Kafka consumer configuration
 consumer = KafkaConsumer(
     'user-interactions',
-    bootstrap_servers='localhost:9092',
+    bootstrap_servers='kafka-service:9092',
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
 def kafka_consumer():
-    consumer = KafkaConsumer(
-        'user-interactions',
-        bootstrap_servers='localhost:9092',
-        value_deserializer=lambda x: json.loads(x.decode('utf-8'))
-    )
 
     for message in consumer:
         interaction_data = message.value
         user_id = interaction_data['user_id']
         product_scores = interaction_data['product_scores']
-
-        # Convert user_id to integer if necessary
-        if isinstance(user_id, str) and user_id.isdigit():
-            user_id = int(user_id)
+        user_id = int(user_id)
 
         # Fetch the user from MongoDB
         user = electronics_data_collection.find_one({'user_id': user_id})
@@ -501,9 +493,7 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(retrain_model_wrapper, 'interval', weeks=1)  # Run retrain_model_wrapper every week
 scheduler.start()
 
-# Run Kafka consumer in a background thread
-consumer_thread = threading.Thread(target=kafka_consumer)
-consumer_thread.start()
-
 if __name__ == "__main__":
+    consumer_process = Process(target=kafka_consumer)
+    consumer_process.start()
     app.run(debug=True, port=5555)
