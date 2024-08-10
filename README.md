@@ -2,7 +2,7 @@
 
 # 📦 My E-Commerce Recommendation System Application
 
-Welcome to the **y E-Commerce Recommendation System Application** repository! This guide will help you set up and run the entire application on your local Kubernetes cluster.
+Welcome to the **E-Commerce Recommendation System Application** repository! This guide will help you set up and run the entire application on your local Kubernetes cluster.
 
 ## 🚀 Getting Started
 
